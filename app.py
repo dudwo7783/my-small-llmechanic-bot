@@ -1,13 +1,14 @@
 import random
 import time
 import streamlit as st
+from code_rag.rag import QA
 
 class ChatBot:
     def __init__(self):
         self.messages = []
         self.sample_questions = [
     {
-        "question": "What are some popular tourist destinations?", 
+        "question": "전조등이 이상이 있을 때에는 어떻게 해?", 
         "response": (
             "Some popular tourist destinations are:", 
             [
@@ -53,6 +54,7 @@ class ChatBot:
             if st.button(question["question"], key=f"question_{index}"):
                 self.messages.append({"role": "user", "content": question["question"]})
                 text, image_paths, answer_type = question["response"]
+                text = QA(question["question"])
                 response = "".join(list(self.response_generator(text, image_paths)))
                 content = response.split("|")
                 self.messages.append({"role": "assistant", "content": response, "answer_type": answer_type})
