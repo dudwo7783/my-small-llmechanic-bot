@@ -54,7 +54,7 @@ class ChatBot:
             if st.button(question["question"], key=f"question_{index}"):
                 self.messages.append({"role": "user", "content": question["question"]})
                 text, image_paths, answer_type = question["response"]
-                text = QA(question["question"])
+                text = QA(question["question"])['text']
                 response = "".join(list(self.response_generator(text, image_paths)))
                 content = response.split("|")
                 self.messages.append({"role": "assistant", "content": response, "answer_type": answer_type})
