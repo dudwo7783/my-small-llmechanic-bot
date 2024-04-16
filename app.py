@@ -23,10 +23,7 @@ class ChatBot:
         "question": "What are some popular tourist destinations?", 
         "response": (
             "Some popular tourist destinations are:", 
-            [
-                "https://postfiles.pstatic.net/20151119_284/superbin0713_1447908339382uF9ur_JPEG/Meerkat_%28Suricata_suricatta%29_Tswalu.jpg?type=w2", 
-                "https://i.namu.wiki/i/bNuxf5wk6fxRGLkeC5BBEYvN1BQy4voyLmm_1DyPOZ5V5eNDwOe3zMGuBFr57vN6EZU8legoVfYh-HF_7dxL7tj-uyYBcY1PIG0_aSMRiYNF9WGyqp34yRZISFNUaGqKLO46V27_WvSfEVm8JAWXGg.webp", 
-            ], "image"
+            None, "image"
         )
     },
     {
@@ -42,11 +39,13 @@ class ChatBot:
     },
         ]
 
-    def response_generator(self, text, image_paths):
-        response = f"{text}|{','.join(image_paths)}"
-        for word in response.split():
-            yield word + " "
-            time.sleep(0.05)
+    # def response_generator(self, text, image_paths):
+    #     if image_paths==None:
+    #         image_paths=''
+    #     response = f"{text}|{','.join(image_paths)}"
+    #     for word in response.split():
+    #         yield word + " "
+    #         time.sleep(0.05)
 
     def display_question_buttons(self):
         st.write("Please select a question:")
@@ -54,22 +53,31 @@ class ChatBot:
             if st.button(question["question"], key=f"question_{index}"):
                 self.messages.append({"role": "user", "content": question["question"]})
                 text, image_paths, answer_type = question["response"]
-                text = QA(question["question"])['text']
-                response = "".join(list(self.response_generator(text, image_paths)))
-                content = response.split("|")
+                # text = QA(question["question"])['text']
+                response = {"text": QA(question["question"])['text'], "image": image_paths}
+                print("Save Response when click button")
+                print(response)
                 self.messages.append({"role": "assistant", "content": response, "answer_type": answer_type})
                 break
 
     def display_chat_history(self):
         for message in self.messages:
             with st.chat_message(message["role"]):
-                content = message["content"].split("|")
-                st.markdown(content[0])
-                if len(content) > 1 and message["answer_type"] == "image":
-                    image_paths = content[1].split(",")
+                content = message["content"]
+                if message["role"]=='assistant':
+                    print("displayChat: content")
+                    print(content)
+                    st.markdown(content["text"])
+                else:
+                    st.markdown(content)
+                
+                if message["role"]=='assistant' and content["image"] != None and message["answer_type"] == "image":
+                    image_paths = content["image"]
                     with st.expander("Click to view images"):
                         cols = st.columns(len(image_paths))
                         for i, image_path in enumerate(image_paths):
+                            print("#1 Image Path")
+                            print(image_path)
                             with cols[i]:
                                 st.image(image_path)
 
@@ -78,9 +86,21 @@ class ChatBot:
         if user_input:
             st.chat_message("user").write(user_input)
             self.messages.append({"role": "user", "content": user_input})
-            assistant_response = "This is a sample response from the assistant."
+            assistant_response = QA(user_input)
+
             self.messages.append({"role": "assistant", "content": assistant_response, "answer_type": answer_type})
-            st.chat_message("assistant").write(assistant_response)
+            with st.chat_message("assistant"):
+                st.markdown(assistant_response["text"])
+                time.sleep(1)
+                with st.expander("Click to view images"):
+                    if assistant_response["image"]!= None:
+                        image_paths = assistant_response["image"]
+                        cols = st.columns(len(image_paths))
+                        for i, image_path in enumerate(image_paths):
+                            print("#1 Image Path")
+                            print(image_path)
+                            with cols[i]:
+                                st.image(image_path)
 
     def run(self):
         st.title("Echo Bot")
