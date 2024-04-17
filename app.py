@@ -47,16 +47,23 @@ class ChatBot:
     #         yield word + " "
     #         time.sleep(0.05)
 
+    # Button 클릭 시 작동
     def display_question_buttons(self):
         st.write("Please select a question:")
         for index, question in enumerate(self.sample_questions):
             if st.button(question["question"], key=f"question_{index}"):
                 self.messages.append({"role": "user", "content": question["question"]})
                 text, image_paths, answer_type = question["response"]
-                # text = QA(question["question"])['text']
-                response = {"text": QA(question["question"])['text'], "image": image_paths}
+                answer = QA(question["question"])
+                res = []
+                for i in answer['source_documents']:
+                    image_path = i.to_json()['kwargs']['metadata']['img_url']
+                    res += image_path
+                res = [sub.replace('./image', '/llm_image') for sub in res]
                 print("Save Response when click button")
-                print(response)
+                print(answer.keys())
+                response = {"text": answer['result'], "image": res}
+                
                 self.messages.append({"role": "assistant", "content": response, "answer_type": answer_type})
                 break
 
@@ -86,8 +93,15 @@ class ChatBot:
         if user_input:
             st.chat_message("user").write(user_input)
             self.messages.append({"role": "user", "content": user_input})
-            assistant_response = QA(user_input)
 
+            assistant_response = QA(user_input)
+            res = []
+            for i in assistant_response['source_documents']:
+                image_path = i.to_json()['kwargs']['metadata']['img_url']
+                res += image_path
+            res = [sub.replace('./image', '/llm_image') for sub in res]
+
+            assistant_response = {"text": assistant_response['result'], "image": res}
             self.messages.append({"role": "assistant", "content": assistant_response, "answer_type": answer_type})
             with st.chat_message("assistant"):
                 st.markdown(assistant_response["text"])
@@ -97,13 +111,11 @@ class ChatBot:
                         image_paths = assistant_response["image"]
                         cols = st.columns(len(image_paths))
                         for i, image_path in enumerate(image_paths):
-                            print("#1 Image Path")
-                            print(image_path)
                             with cols[i]:
                                 st.image(image_path)
 
     def run(self):
-        st.title("Echo Bot")
+        st.title("My Small Javis")
         if len(self.messages) == 0:
             self.display_question_buttons()
         else:
@@ -117,11 +129,7 @@ class ChatBot:
             answer_type = last_message.get("answer_type", "image")
             self.handle_user_input(answer_type)
 
-# # Create an instance of the ChatBot class
-# chat_bot = ChatBot()
 
-# # Run the chat bot
-# chat_bot.run() 
 if "chat_bot" not in st.session_state:
     st.session_state.chat_bot = ChatBot()
 
