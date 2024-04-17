@@ -95,6 +95,4 @@ def QA(query):
                                            chain_type_kwargs={"prompt": chat_prompt},
                                            return_source_documents=True)
     result = qa_chain({"query": query})
-    return {"text":result['result'],
-            "image":None,
-            'table':None}
+    return result
