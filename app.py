@@ -91,33 +91,14 @@ class ChatBot:
         st.write("Please select a question:")
         for index, question in enumerate(self.sample_questions):
             ind = question["index"]
-            # if question["question"] in ['직접입력'] :
-            #     if st.button(question["question"], key=f"question_{ind}"):
-            #         self.handle_user_input()
+
             if st.button(question["question"], key=f"question_{ind}", type="primary"):
-                
-                # Test Section
                 if "selected_question" not in st.session_state:
                     st.session_state.selected_question = None
                 st.session_state.selected_question = question
                 self.depth = 1
                 self.display_subquestion_buttons()
                 
-                # # Original Code
-                # self.messages.append({"role": "user", "content": question["question"]})
-                # text, image_paths, answer_type = question["response"]
-                # answer = QA(question["question"])
-                # res = []
-                # for i in answer['source_documents']:
-                #     image_path = i.to_json()['kwargs']['metadata']['img_url']
-                #     res += image_path
-                # res = [sub.replace('./image', '/llm_image') for sub in res]
-                # print("Save Response when click button")
-                # print(answer.keys())
-                # response = {"text": answer['result'], "image": res}
-                
-                # self.messages.append({"role": "assistant", "content": response, "answer_type": answer_type})
-                # break
 
     def display_chat_history(self):
         for message in self.messages:
@@ -151,7 +132,7 @@ class ChatBot:
             for i in assistant_response['source_documents']:
                 image_path = i.to_json()['kwargs']['metadata']['img_url']
                 res += image_path
-            res = [sub.replace('./image', '/llm_image') for sub in res]
+            res = [sub.replace('./image', '/llm_img') for sub in res]
 
             assistant_response = {"text": assistant_response['result'], "image": res}
             self.messages.append({"role": "assistant", "content": assistant_response, "answer_type": answer_type})
