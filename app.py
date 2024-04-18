@@ -61,9 +61,10 @@ class ChatBot:
         ]
 
     def stream_data(self, text):
+        st.toast("답변 생성중입니다......")
         for word in text.split(" "):
             yield word + " "
-            time.sleep(0.02)
+            time.sleep(0.2)
 
     def display_subquestion_buttons(self):
         if "selected_question" not in st.session_state:
@@ -126,7 +127,7 @@ class ChatBot:
         user_input = st.text_input("질문할 내용을 적어주세요: ", key="user_input")
         if user_input:
             st.chat_message("user").write(user_input)
-            st.toast("답변 생성중입니다......")
+            st.toast("서칭 중......")
             self.messages.append({"role": "user", "content": user_input})
 
             assistant_response = QA(user_input)
@@ -141,7 +142,6 @@ class ChatBot:
             st.toast('Yeaaaaaaaaah',  icon='🎉')
             with st.chat_message("assistant"):
                 st.write_stream(self.stream_data(assistant_response["text"]))
-                time.sleep(1)
                 with st.expander("Click to view images"):
                     if assistant_response["image"]!= None:
                         image_paths = assistant_response["image"]
