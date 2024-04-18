@@ -83,7 +83,7 @@ class ChatBot:
                 self.messages.append({"role": "user", "content": subquestion})
                 assistant_response = QA(subquestion)
                 text, image_paths, answer_type = selected_question["response"][ind2]
-                response = {"text": assistant_response['text'], "image": image_paths}
+                response = {"text": assistant_response['result'], "image": image_paths}
                 self.messages.append({"role": "assistant", "content": response, "answer_type": answer_type})
 
     # Button 클릭 시 작동
@@ -113,13 +113,14 @@ class ChatBot:
                 
                 if message["role"]=='assistant' and content["image"] != None and message["answer_type"] == "image":
                     image_paths = content["image"]
-                    with st.expander("Click to view images"):
-                        cols = st.columns(len(image_paths))
-                        for i, image_path in enumerate(image_paths):
-                            print("#1 Image Path")
-                            print(image_path)
-                            with cols[i]:
-                                st.image(image_path)
+                    if len(image_paths) != 0:
+                        with st.expander("Click to view images"):
+                            cols = st.columns(len(image_paths))
+                            for i, image_path in enumerate(image_paths):
+                                print("#1 Image Path")
+                                print(image_path)
+                                with cols[i]:
+                                    st.image(image_path)
 
     def handle_user_input(self, answer_type):
         user_input = st.text_input("질문할 내용을 적어주세요: ", key="user_input")
@@ -128,6 +129,7 @@ class ChatBot:
             self.messages.append({"role": "user", "content": user_input})
 
             assistant_response = QA(user_input)
+            st.toast("답변 생성중입니다......")
             res = []
             for i in assistant_response['source_documents']:
                 image_path = i.to_json()['kwargs']['metadata']['img_url']
@@ -136,23 +138,24 @@ class ChatBot:
 
             assistant_response = {"text": assistant_response['result'], "image": res}
             self.messages.append({"role": "assistant", "content": assistant_response, "answer_type": answer_type})
+            st.toast('Yeaaaaaaaaah',  icon='🎉')
             with st.chat_message("assistant"):
                 st.write_stream(self.stream_data(assistant_response["text"]))
                 time.sleep(1)
                 with st.expander("Click to view images"):
                     if assistant_response["image"]!= None:
                         image_paths = assistant_response["image"]
-                        cols = st.columns(len(image_paths))
-                        for i, image_path in enumerate(image_paths):
-                            with cols[i]:
-                                st.image(image_path)
+                        if len(image_paths) != 0:
+                            cols = st.columns(len(image_paths))
+                            for i, image_path in enumerate(image_paths):
+                                with cols[i]:
+                                    st.image(image_path)
 
     def run(self):
         st.title("My Small Javis")
         if len(self.messages) == 0 and self.depth==0:
             self.display_question_buttons()
             answer_type = "image"
-            self.handle_user_input(answer_type)
         elif len(self.messages)==0 and self.depth==1:
             self.display_subquestion_buttons()
         else:
@@ -164,8 +167,7 @@ class ChatBot:
         if len(self.messages) > 0:
             last_message = self.messages[-1]
             answer_type = last_message.get("answer_type", "image")
-            self.handle_user_input(answer_type)
-
+        self.handle_user_input(answer_type)
 
 if "chat_bot" not in st.session_state:
     st.session_state.chat_bot = ChatBot()
