@@ -126,10 +126,10 @@ class ChatBot:
         user_input = st.text_input("질문할 내용을 적어주세요: ", key="user_input")
         if user_input:
             st.chat_message("user").write(user_input)
+            st.toast("답변 생성중입니다......")
             self.messages.append({"role": "user", "content": user_input})
 
             assistant_response = QA(user_input)
-            st.toast("답변 생성중입니다......")
             res = []
             for i in assistant_response['source_documents']:
                 image_path = i.to_json()['kwargs']['metadata']['img_url']
