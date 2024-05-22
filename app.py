@@ -10,6 +10,9 @@ class ChatBot:
         self.messages = []
         self.type=0
         self.id=1
+        self.answer = []
+        self.but = 0
+        self.set_num = -999
 
     # 글자 타이핑 되도록 이펙트
     def stream_data(self, text):
@@ -25,7 +28,6 @@ class ChatBot:
         cursor.execute("SELECT * FROM button WHERE id=?", (self.id,))
         result = cursor.fetchone()
         response = json.loads(result[2])
-        # print(result)
         if result[4] == 0:
             with st.chat_message("assistant"):
                 for index, res in enumerate(response):
@@ -33,23 +35,27 @@ class ChatBot:
                     ind = str(self.id) + '_' + str(index)
                     if st.button(res, key=f"question_{ind}", type="primary"):
                         cursor.execute("SELECT * FROM button WHERE question=?", (res,))
-                        answer = cursor.fetchone()
-                        if answer[4]==2:
+                        self.answer = cursor.fetchone()
+                        if self.answer[4]==2:
                             self.messages.append({"role": "user", "content": res})
                             self.type = 1
                         else:
-                            # TODO: self.id정의를 끝에서 하되 여기서 누른것의 id를 self.id로 하는 것을 마지막에 추가해줘야함 그럼 breakㅠ필요 없음
-                            self.id = answer[0]
+                            self.but = 1
                             text = response
                             assis_res = {"text": [text, res], 'image': None}
                             self.messages.append({"role": "assistant", "content": assis_res, "answer_type": answer_type})
                             self.messages.append({"role": "user", "content": res})
-                            # if answer[4]==1:
-                            #     self.type = 1
-                            #     # TODO: 여기에  button다시 실행시킬
-                            #     return
-                        break
-        # 직접 입력일 경우 result[4] == 2로 지정 해놓고 진행하면 될듯?
+                else:
+                    if self.answer:
+                        self.set_num = self.answer[0]
+
+            # 활성화한 버튼 id 저장
+            if self.set_num != -999:
+                self.id = self.set_num
+            # button 작동 여부 체크
+            if self.but:
+                self.but=0
+                st.rerun()
         else:
             self.type = 1
             text = json.loads(result[2])[0]
@@ -59,8 +65,8 @@ class ChatBot:
             answer_type='image'
             # self.messages.append({"role": "user", "content": question})
             self.messages.append({"role": "assistant", "content": res, "answer_type": answer_type})
+
             with st.chat_message("assistant"):
-                
                 st.write_stream(response)
                 with st.expander("Click to view images"):
                     if len(image_paths) != 0:
@@ -102,16 +108,16 @@ class ChatBot:
             st.chat_message("user").write(user_input)
             st.toast("서칭 중......")
             self.messages.append({"role": "user", "content": user_input})
-
             assistant_response = QA(user_input)
+
             res = []
             for i in assistant_response['source_documents']:
                 image_path = i.to_json()['kwargs']['metadata']['img_url']
                 res += image_path
             res = [sub.replace('./image', '/llm_img') for sub in res]
-
             assistant_response = {"text": assistant_response['result'], "image": res}
             self.messages.append({"role": "assistant", "content": assistant_response, "answer_type": answer_type})
+
             st.toast('Yeaaaaaaaaah',  icon='🎉')
             with st.chat_message("assistant"):
                 st.write_stream(self.stream_data(assistant_response["text"]))
@@ -135,17 +141,14 @@ class ChatBot:
         print("First if AFTER")
         self.display_chat_history()
         if len(self.messages) > 0:
-            # print(1)
             print("Second if IN")
             last_message = self.messages[-1]
             answer_type = last_message.get("answer_type", "image")
             if self.type==0:
-                # print(2)
                 print("Third if IN")
                 answer_type = "button"
                 self.display_question_buttons(answer_type)
             else:
-                # print(3)
                 print("Forth if IN")
                 answer_type="image"
                 self.handle_user_input(answer_type)

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import sqlite3
 import json
 
@@ -15,6 +16,7 @@ sample_questions = [
                 "시동 및 도어",
                 "장치",
                 "주유/충전",
+                "경고등",
                 "직접입력"
                 ],
             "image": [],
@@ -26,7 +28,7 @@ sample_questions = [
         "index": 1,
         "response": {
             "text": [
-                "시동버튼 위치",
+                "시동걸기",
                 "스마트키 원격시동",
                 "차 밖에서 문열기",
                 "차 안에서 문열기"
@@ -36,14 +38,14 @@ sample_questions = [
         }
     },
     {
-        "question": "시동버튼 위치", 
+        "question": "시동걸기", 
         "index": 2,
         "response": {
             "text": [
-                '시동버튼은 여기 있습니다',
+                '기어를 P(주차) 상태에 둔 후 브레이크 페달을 밟으면서 시동 버튼을 누르세요',
                 ],
             "image": [
-                'https://mblogthumb-phinf.pstatic.net/MjAxODA0MTZfNTAg/MDAxNTIzODY3ODcyMzI5.IqNbzCXP56JI5G1cF3YpnqLn2lrbokipOq3Hdnac4T8g.tNVb_rGeukIDA46b-_cNvkaAI9Ut1UacE_b5OMR7Sokg.PNG.0323lena/image_5131097701523867771893.png?type=w800'
+                './image/시동걸기.png'
                 ],
             "type": 1,
         }
@@ -53,10 +55,10 @@ sample_questions = [
         "index": 3,
         "response": {
             "text": [
-                '스마트키 원격시동은 이렇게 하십쇼'
+                '차량과 10m 이내 거리에서 스마트키의 도어잠금 버튼을 누른 후 4초 이내 하단의 원격시동 버튼을 길게 누르세요\n\n*시동이 걸리면 비상 경고등이 깜빡입니다\n*원격 시동을 끄려면 원격시동 버튼을 다시 누르세요'
                 ],
             "image": [
-                'https://i.ytimg.com/vi/fImEZifLV9U/maxresdefault.jpg'
+                './image/스마트키 원격시동.png'
                 ],
             "type": 1,
         }
@@ -66,10 +68,10 @@ sample_questions = [
         "index": 4,
         "response": {
             "text": [
-                '차 밖에서 문열기는 요러케'
+                '스마트 키를 휴대하고 앞좌석 도어핸들 쪽으로 1m 이내 접근시, 자동으로 잠금해제되면서 바깥쪽 도어 핸들이 튀어나옵니다.\n\n*\'접근 시 잠금 해제\'가 설정된 경우, 경고등이 2회 깜빡거리고 확인음이 2회 울립니다'
                 ],
             "image": [
-                'https://mblogthumb-phinf.pstatic.net/MjAyMzA0MTJfNCAg/MDAxNjgxMjc5OTEwMTkx.I2hdGumdsJlugAhkRm5WVGFhYnHOw0G-uDI2fXr90aQg.W8Bf8KL6gcHf_96ZAtXmLekQcdqvP88ee0Rd4PgweyUg.JPEG.cyg0703nani/IMG_7052.jpg?type=w800'
+                './image/차 밖에서 문열기.png'
                 ],
             "type": 1,
         }
@@ -79,10 +81,10 @@ sample_questions = [
         "index": 5,
         "response": {
             "text": [
-                '차 안에서 문열기는 요러케'
+                '도어 핸들을 잡아당기면 잠금해제와 동시에 도어가 열립니다\n\n* 스마트키가 차 안에 있을 경우, 앞 좌석 도어를 열고 도어 잠금버튼이나 중앙도어 잠금버튼을 눌러도 도어가 잠기지 않습니다.'
                 ],
             "image": [
-                'https://i.ytimg.com/vi/kxslSjObGD8/maxresdefault.jpg'
+                './image/차 안에서 문열기.png'
                 ],
             "type": 1,
         }
@@ -92,49 +94,49 @@ sample_questions = [
         "index": 6,
         "response": {
             "text": [
-                "후면 트렁크 열고닫기",
-                "전면 트렁크 열고닫기",
-                "변속기 조절하기"
+                "변속 다이얼",
+                "후면 트렁크",
+                "전면 트렁크"
                 ],
             "image": [],
             "type": 0,
         }
     },
     {
-        "question": "후면 트렁크 열고닫기", 
+        "question": "변속 다이얼", 
         "index": 7,
         "response": {
             "text": [
-                '후면 트렁크 열기 버튼을 누르고 위로 올리면 열려요',
+                '브레이크를 밟고 아래 이미지와 같이 변속다이얼을 각 위치로 돌려 변속할 수 있습니다.\n\n*변속단 표시등이 원하는 변속단으로 표시되었는지 반드시 확인해 주세요',
                 ],
             "image": [
-                'https://www.tesla.com/ownersmanual/images/GUID-0C9CE425-C8ED-4ACB-8178-94BB7CF46C3E-online-en-US.png'
+                './image/변속 다이얼.png'
                 ],
             "type": 1,
         }
     },
     {
-        "question": "전면 트렁크 열고닫기", 
+        "question": "후면 트렁크", 
         "index": 8,
         "response": {
             "text": [
-                '전면 트렁크 열기 버튼을 누르고 위로 올리면 열려요'
+                '차량을 주차상태로 놓고, 아래 방법 중 하나를 선택하여 트렁크를 열어주세요.\n1. 스마트키의 테일게이트 작동 버튼을 길게 누르세요.\n2. 실내에서 열림/닫힘 버튼을 누르세요\n3. 실외에서는 스마트키를 휴대하고 파워 테일게이트 핸들 스위치를 눌러 열고, 테일게이트 닫힘 버튼을 누르면 경고등과 함께 닫힙니다.\n\n*파워 테일게이트 작동 중에 버튼을 짧게 누르면 작동이 멈춥니다.\n테일게이트를 닫을 때는 버튼을 계속 누르세요'
                 ],
             "image": [
-                'https://www.tesla.com/ownersmanual/images/GUID-64C680DF-1B33-4182-9D23-E0E33CBAF8BB-online-en-US.png'
+                './image/후면 트렁크.png'
                 ],
             "type": 1,
         }
     },
     {
-        "question": "변속기 조절하기", 
+        "question": "전면 트렁크", 
         "index": 9,
         "response": {
             "text": [
-                '변속기 다이얼 돌리세요'
+                '열기 : 후드를 열고 프론트 트렁크 열림 레버를 위로 누른 상태로 프론트 트렁크 커버를 들어 올리세요\n닫기 : 프론트 트렁크 커버를 아래로 눌러 듣으세요\n\n* 프론트 트렁크 커버 위를 누르거나 물건을 올려놓으면 변형 및 파손될 수 있습니다.\n* 프론트 트렁크 커버를 닫을 때 내부에 적재된 물건과 접촉하지 않도록 주의하세요. '
                 ],
             "image": [
-                'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSSbqUmq4ZVKPhtDzcEG1US0OHDdYN2lwrFQT95txr21A&s'
+                './image/전면 트렁크.png'
                 ],
             "type": 1,
         }
@@ -144,22 +146,23 @@ sample_questions = [
         "index": 10,
         "response": {
             "text": [
-                "충전 도어 열고 닫기",
+                "충전도어",
                 "충전방법",
+                "충전량 확인하기"
                 ],
             "image": [],
             "type": 0,
         }
     },
     {
-        "question": "충전 도어 열고 닫기", 
+        "question": "충전도어", 
         "index": 11,
         "response": {
             "text": [
-                '번호판 옆 등같은거 불쑥 튀어나온거 있음'
+                '아래 방법 중 하나를 선택하여 충전도어를 열고 닫을 수 있습니다.\n1. 충전도어 직접 터치\n2. 스마트키의 충전도어 열림/닫힘 버튼을 1초 이상 길게 누름\n\n* 주행 전 충전 도어가 잘 닫혔는지 확인하세요'
                 ],
             "image": [
-                'https://image.edaily.co.kr/images/Photo/files/NP/S/2021/03/PS21031900347.jpg'
+                './image/충전도어.png'
                 ],
             "type": 1,
         }
@@ -169,10 +172,47 @@ sample_questions = [
         "index": 12,
         "response": {
             "text": [
-                '충전단자에 충전기 연결하자'
+                '충전도어를 열고, 어댑터의 커넥터부분을 찰칵 소리가 날 때까지 충분히 밀어 차량에 먼저 연결한 후, 어댑터의 인렛부부늘 충전기의 커넥터에 연결합니다.\n\n* 충전 커넥터와 충전 인렛에 먼지 등 이물질이 있는지 확인하십시오. \n* 커넥터를 정상적으로 결합하지 않을 경우 화재가 발생할 수 있습니다)\n\n충전이 완료되면 충전 커넷터 손잡이 부분을 잡고 잠금해제 버튼을 누르면서 당겨 분리하십시오\n\n*충전 후 인렛 커버가 제대로 닫히지 않은 상태로 충전 도어를 닫으면 관련 부품이 손상될 수 있습니다. '
                 ],
             "image": [
-                'https://image.kmib.co.kr/online_image/2022/1111/2022111115563193052_1668149791_0017662886.jpg'
+                './image/충전방법.png'
+                ],
+            "type": 1,
+        }
+    },
+    {
+        "question": "충전량 확인하기", 
+        "index": 13,
+        "response": {
+            "text": [
+                    '구동용(고전압) 배터리 충전시 충전오어에서 충전량을 확인할 수 있습니다.\n\n*충전이 시작되면 계기판에 충전예상소요시간이 약 1분 동안 표시됩니다. '
+                ],
+            "image": [
+                './image/충전량 확인하기.png'
+                ],
+            "type": 1,
+        }
+    },
+    {
+        "question": "경고등", 
+        "index": 14,
+        "response": {
+            "text": [
+                "주요 경고등 안내"
+                ],
+            "image": [],
+            "type": 0,
+        }
+    },
+    {
+        "question": "주요 경고등 안내", 
+        "index": 15,
+        "response": {
+            "text": [
+                    '',
+                ],
+            "image": [
+                './image/주요 경고등 안내.png'
                 ],
             "type": 1,
         }
