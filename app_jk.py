@@ -4,6 +4,7 @@ import streamlit as st
 from code_rag.rag import QA
 import sqlite3
 import json
+import ast
 
 from langchain.agents import initialize_agent
 from langchain.agents.tools import Tool
@@ -134,16 +135,6 @@ class ChatBot:
             st.toast('Yeaaaaaaaaah',  icon='🎉')
             with st.chat_message("assistant"):
                 
-                # st.write_stream(self.stream_data(assistant_response["text"]))
-                # with st.expander("Click to view images"):
-                #     if assistant_response["image"]!= None:
-                #         image_paths = assistant_response["image"]
-                #         if len(image_paths) != 0:
-                #             cols = st.columns(len(image_paths))
-                #             for i, image_path in enumerate(image_paths):
-                #                 with cols[i]:
-                #                     st.image(image_path)
-                
                 with st.spinner("Waiting for response..."):
                     try:
                         container = st.empty()
@@ -151,35 +142,41 @@ class ChatBot:
                         buffer = b""
                         boundary = b"my-custom-boundary"
                         image_paths = ''
-                        
                         answer = ''
-                        
-
                         # Get the streaming response from FastAPI
                         async for chunk in get_streaming_response('SONATA_DN8_2024', user_input):
+                            print(chunk)
                             buffer += chunk.encode('utf-8')  # chunk를 바이트로 변환
                             parts = buffer.split(boundary)
+                            
                             # buffer = parts.pop()
                             # print(buffer)
                             for part in parts:
                                 part_data = part.split(b"\r\n\r\n")
 
-                                if len(part_data) >= 2:
-                                    header, data = part_data[0], part_data[1]
-                                    if b"Content-Type: text/event-stream" in header:
-                                        # print('after if')
-                                        # print(data)
-                                        # logger.info(data.decode("utf-8"))
-                                        # await asyncio.sleep(1)
-                                        token = data.decode("utf-8")  # .rstrip()
-                                        print(token)
-                                        answer += token
-                                        
-                                    elif b"Content-Type: text/plain" in header:
-                                        # image_data.append(data.strip())
-                                        image_paths = data.decode('utf-8')  # 이미지 경로를 문자열로 변환
+                            if len(part_data) >= 2:
+                                header, data = part_data[0], part_data[1]
+
+                                if b"Content-Type: text/event-stream" in header:
+                                    # print('after if')
+                                    # print(data)
+                                    # logger.info(data.decode("utf-8"))
+                                    # await asyncio.sleep(0.1)
+                                    token = data.decode("utf-8")  # .rstrip()
+                                    answer += token
+                                    
+                                elif b"Content-Type: text/plain" in header:
+                                    # image_data.append(data.strip())
+                                    image_paths = data.decode('utf-8')  # 이미지 경로를 문자열로 변환     
+                            # else:
+                            #     temp = answer
                             container.markdown(answer)# unsafe_allow_html=True
+                                
                         else:
+                            # print('hello?')
+                            # print(image_paths)
+                            image_paths = ast.literal_eval(image_paths)
+                            container.markdown(answer)# unsafe_allow_html=True
                             with container.expander("Click to view images"):
                                 if len(image_paths) != 0:
                                     cols = st.columns(len(image_paths))

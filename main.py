@@ -18,10 +18,10 @@ from aiohttp import MultipartWriter, web
 os.environ["LANGCHAIN_TRACING_V2"]="true"
 os.environ["LANGCHAIN_ENDPOINT"]="https://api.smith.langchain.com"
 # TODO: 바꾸기
-os.environ["LANGCHAIN_API_KEY"]="langchainkey"
+os.environ["LANGCHAIN_API_KEY"]="LANGCHAIN_API_KEY"
 os.environ["LANGCHAIN_PROJECT"]="my-small_mechanic"
-# TODO: 바꾸기
-os.environ['OPENAI_API_KEY'] = 'apikey'
+
+os.environ['OPENAI_API_KEY'] = 'OPENAI_API_KEY'
 os.environ['MILVUS_PORT'] = '19530'
 
 milvus_host = 'localhost'#os.environ["MILVUS_HOST"]
@@ -30,17 +30,15 @@ milvus_port = os.environ["MILVUS_PORT"]
 DB_COLLECTION_NAME = "TEST"
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
 NAMESPACE_TYPE = ["IONIQ5_2024", "SANTAFE_MX5_2024", "SONATA_DN8_2024"]
-NAMESPACE = NAMESPACE_TYPE[0]
+# NAMESPACE = NAMESPACE_TYPE[0]
 
 CONTEXT_PATH = 'C:/LLM/streamlit/pdf_context'
 sparse_params = {"drop_ratio_search": 0.01}
 dense_params = {"ef": 100}
 device='cpu'
 reranker = pipeline("text-classification", model="Dongjin-kr/ko-reranker", device=device)
-
-text_generator = car_manual_generator(OPENAI_API_KEY, NAMESPACE, milvus_host, milvus_port, DB_COLLECTION_NAME, 10, rrk_weight=(0, 1),
-                                score_filter=True, threshold=0.3, drop_duplicates=True, context_path=CONTEXT_PATH, reranker=reranker)
-
+# text_generator = car_manual_generator(OPENAI_API_KEY, namespace, milvus_host, milvus_port, DB_COLLECTION_NAME, 10, rrk_weight=(0, 1),
+#                             score_filter=True, threshold=0.3, drop_duplicates=True, context_path=CONTEXT_PATH, reranker=reranker)
 app = FastAPI()
 
 def from_image_to_bytes(img):
@@ -61,52 +59,32 @@ def from_image_to_bytes(img):
 def read_root():
     return {"Hello": "World"}
 
-@app.get("/get_car_information/")
-def generate_car_manual_answer(q: str = None):
+# @app.get("/get_car_information/")
+# def generate_car_manual_answer(q: str = None):
     
-    reduce_answer, context_answer, context_bag, docs, scores =  text_generator.generate_answer(q)
+#     reduce_answer, context_answer, context_bag, docs, scores =  text_generator.generate_answer(q)
     
-    pil_image_list = []
-    for img_url in context_bag['image_urls']:
-        img_abs_path = os.path.join(CONTEXT_PATH + '/' + img_url)
-        img = Image.open(img_abs_path)
-        pil_image_list.append(from_image_to_bytes(img))
-    return {"query": q, "answer": reduce_answer, 'image': pil_image_list}
-
-# @app.get("/aget_car_information/")
-# async def agenerate_car_manual_answer(query: str):
-
-#     stream_it = AsyncIteratorCallbackHandler()
-#     # TODO: ver 2
-#     # reduce_answer_iter = text_generator.agenerate_answer(query, stream_it) + '斷./image/너구리.jpg'
-#     # TODO: ver 1
-#     reduce_answer, context_answer, context_bag, docs, scores = text_generator.agenerate_answer(query, stream_it)
-
-#     data = {
-#         'text': reduce_answer,
-#         'image': context_bag['image_urls']
-#     }
-
-#     # ver 2
-#     # return StreamingResponse(reduce_answer_iter, media_type="text/event-stream")
-#     # ver 1
-#     print(data)
-#     return StreamingResponse(data, media_type="application/json")
+#     pil_image_list = []
+#     for img_url in context_bag['image_urls']:
+#         img_abs_path = os.path.join(CONTEXT_PATH + '/' + img_url)
+#         img = Image.open(img_abs_path)
+#         pil_image_list.append(from_image_to_bytes(img))
+#     return {"query": q, "answer": reduce_answer, 'image': pil_image_list}
 
 @app.get("/aget_car_information/")
 async def agenerate_car_manual_answer(namespace: str, query: str):
+    # print(query)
     stream_it = AsyncIteratorCallbackHandler()
-    text_generator = car_manual_generator(OPENAI_API_KEY, namespace, milvus_host, milvus_port, DB_COLLECTION_NAME, 10, rrk_weight=(0.3, 0.7),
-                                          score_filter=True, threshold=0.3, drop_duplicates=True, context_path=CONTEXT_PATH, reranker=reranker)
-    
+    text_generator = car_manual_generator(OPENAI_API_KEY, namespace, milvus_host, milvus_port, DB_COLLECTION_NAME, 10, rrk_weight=(0, 1),
+                                score_filter=True, threshold=0.3, drop_duplicates=True, context_path=CONTEXT_PATH, reranker=reranker)
     async def generate_response():
         async for chunk, context_bag in text_generator.agenerate_answer(query, stream_it):
             yield chunk, context_bag['image_urls']
-
     # 멀티파트 응답 생성
     boundary = "my-custom-boundary"
     
     async def iterfile():
+        print('after iterfile')
         async for chunk, context_bag in generate_response():
             print(chunk)
             yield (f"{boundary}\r\n"
@@ -114,10 +92,12 @@ async def agenerate_car_manual_answer(namespace: str, query: str):
                    f"{chunk}").encode("utf-8")
         if len(context_bag)!=0:
             print(context_bag)
+        #     # TODO: sample
             image = str(context_bag)
-            yield (f"{boundary}\r\n"
-                    f"Content-Type: text/plain\r\n\r\n"
-                    f"{image}").encode("utf-8")
+        # image = str(['./image/너구리.jpg'])
+        yield (f"{boundary}\r\n"
+                f"Content-Type: text/plain\r\n\r\n"
+                f"{image}").encode("utf-8")
 
     # 응답 반환
     return StreamingResponse(iterfile(), media_type=f"multipart/form-data; boundary={boundary}")
