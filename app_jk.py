@@ -5,14 +5,6 @@ from code_rag.rag import QA
 import sqlite3
 import json
 import ast
-import os
-
-from langchain.agents import initialize_agent
-from langchain.agents.tools import Tool
-from langchain.chains import LLMChain
-from langchain.callbacks import StreamlitCallbackHandler
-from langchain.memory import ConversationBufferMemory
-from langchain_community.chat_message_histories import RedisChatMessageHistory
 
 import httpx
 import asyncio
@@ -24,9 +16,11 @@ import redis
 REDIS_URL = "REDIS SERVER URL"
 session_id = "999"
 
-async def get_streaming_response(namespace, query, session_id):
+async def get_streaming_response(namespace, query, session_id, llm_model):
     async with httpx.AsyncClient(timeout=None) as client:
-        async with client.stream('GET', 'http://localhost:8000/aget_car_information/', params={'namespace': namespace, 'query': query, 'session_id': session_id}) as response:
+        async with client.stream(
+            'GET', 'http://localhost:8000/aget_car_information/', 
+            params={'namespace': namespace, 'query': query, 'session_id': session_id, 'llm_model': llm_model}) as response:
             async for chunk in response.aiter_text():
                 yield chunk
 
@@ -188,7 +182,7 @@ class ChatBot():
                         image_paths = ''
                         answer = ''
                         # Get the streaming response from FastAPI
-                        async for chunk in get_streaming_response(st.session_state.car_model, user_input, st.session_state.session_id):
+                        async for chunk in get_streaming_response(st.session_state.car_model, user_input, st.session_state.session_id, st.session_state.llm_model):
                             buffer += chunk.encode('utf-8')  # chunk를 바이트로 변환
                             parts = buffer.split(boundary)
                             
@@ -231,16 +225,19 @@ class ChatBot():
 
     def side_bar(self):
         with st.sidebar:
-            
+            llm_model = st.radio(
+                "What's Your Model?:",
+                ['gpt-3.5-turbo', 'gpt-4-turbo']
+            )
+            st.session_state.llm_model = llm_model
             car_model = st.selectbox(
-                "차정",
+                "Select Your Car :car:",
                 ["IONIQ5_2024", "SANTAFE_MX5_2023", "SONATA_DN8_2024"]
             )
             r= redis.Redis(host='43.200.165.177', port=6379)
             st.session_state.car_model = car_model
             key_list = r.keys(f'message_store:{st.session_state.personal_id}*')
             key_list = [key for key in key_list if b'image' not in key]
-            print(key_list)
             if len(key_list)>0:
                 for index, key in enumerate(key_list, start=1):
 
@@ -261,7 +258,7 @@ class ChatBot():
                 st.session_state.clicked = False
                 # self.type = 1
                 st.rerun()
-            if st.button("New Chat", key="new_chat"):
+            if st.button("New Chat", key="new_chat", type="primary"):
                 new_session = st.session_state.max_session + 1
                 st.session_state.session_id = f'{st.session_state.personal_id}_{new_session}' 
                 self.reset_chat(st.session_state.personal_id)
@@ -305,11 +302,3 @@ if "chat_bot" not in st.session_state:
     st.session_state.chat_bot = ChatBot(st.session_state.personal_id)
 
 st.session_state.chat_bot.run()
-
-
-
-
-
-
-            # with open("./messages.txt", "w") as file:
-            #     file.write(json.dumps(self.messages))

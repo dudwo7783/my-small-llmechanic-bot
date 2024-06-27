@@ -45,7 +45,6 @@ CONTEXT_PATH = 'Context Path'
 device='cpu'
 reranker = pipeline("text-classification", model="Dongjin-kr/ko-reranker", device=device)
 
-
 app = FastAPI()
 
 def from_image_to_bytes(img):
@@ -68,10 +67,12 @@ async def read_root(id:int, namespace:str):
     
 
 @app.get("/aget_car_information/")
-async def agenerate_car_manual_answer(namespace: str, query: str, session_id: str):
+async def agenerate_car_manual_answer(namespace: str, query: str, session_id: str, llm_model:str):
     stream_it = AsyncIteratorCallbackHandler()
+    print(llm_model)
     text_generator = car_manual_generator(OPENAI_API_KEY, namespace, milvus_host, milvus_port, DB_COLLECTION_NAME, 10, rrk_weight=(0, 1),
-                                score_filter=True, threshold=0.3, drop_duplicates=True, context_path=CONTEXT_PATH, reranker=reranker)
+                                score_filter=True, threshold=0.3, drop_duplicates=True, context_path=CONTEXT_PATH, reranker=reranker,
+                                llm_model=llm_model, pandas_llm_model=llm_model, reduce_model=llm_model, map_text_model=llm_model)
 
     # 멀티파트 응답 생성
     boundary = "my-custom-boundary"
