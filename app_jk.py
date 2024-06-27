@@ -234,7 +234,7 @@ class ChatBot():
             
             car_model = st.selectbox(
                 "차정",
-                ["IONIQ5_2024", "SANTAFE_MX5_2024", "SONATA_DN8_2024"]
+                ["IONIQ5_2024", "SANTAFE_MX5_2023", "SONATA_DN8_2024"]
             )
             r= redis.Redis(host='43.200.165.177', port=6379)
             st.session_state.car_model = car_model
