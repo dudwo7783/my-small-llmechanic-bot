@@ -155,6 +155,7 @@ class ChatBot():
                                     st.image(image_path)
 
     async def handle_user_input(self, answer_type):
+        container_base = st.empty()
 
         col1, col2 = st.columns([8.5,1.5])
         with col1:
@@ -166,61 +167,62 @@ class ChatBot():
                 st.rerun()
 
         if user_input:
-            st.chat_message("user").write(user_input)
-            st.toast("서칭 중......")
-            user_question = {"text": user_input, "image": []}
-            self.messages.append({"role": "user", "content": user_question})
-            # st.toast('Yeaaaaaaaaah',  icon='🎉')
-            with st.chat_message("assistant"):
-                
-                with st.spinner("Waiting for response..."):
-                    try:
-                        container = st.empty()
-                        # Buffer to store the incoming chunks
-                        buffer = b""
-                        boundary = b"my-custom-boundary"
-                        image_paths = ''
-                        answer = ''
-                        # Get the streaming response from FastAPI
-                        async for chunk in get_streaming_response(st.session_state.car_model, user_input, st.session_state.session_id, st.session_state.llm_model):
-                            buffer += chunk.encode('utf-8')  # chunk를 바이트로 변환
-                            parts = buffer.split(boundary)
-                            
-                            for part in parts:
-                                part_data = part.split(b"\r\n\r\n")
-
-                            if len(part_data) >= 2:
-                                header, data = part_data[0], part_data[1]
-
-                                if b"Content-Type: text/event-stream" in header:
-                                    token = data.decode("utf-8")
-                                    answer += token
-                                    container.markdown(answer)
-                                elif b"Content-Type: text/plain" in header:
-                                    image_paths = data.decode('utf-8')  # 이미지 경로를 문자열로 변환  
-                        
+            with container_base.container():
+                st.chat_message("user").write(user_input)
+                st.toast("서칭 중......")
+                user_question = {"text": user_input, "image": []}
+                self.messages.append({"role": "user", "content": user_question})
+                # st.toast('Yeaaaaaaaaah',  icon='🎉')
+                with st.chat_message("assistant"):
+                    
+                    with st.spinner("Waiting for response..."):
                         try:
-                            image_paths = ast.literal_eval(image_paths)
-                            assistant_response = {"text": answer, "image": image_paths}
-                        except:
-                            assistant_response = {"text": answer, "image": []}
-                        
-                        with container.container():
-                            st.markdown(answer)
-                            if len(image_paths) != 0:
-                                with st.expander("Click to view images"):
-                                    if len(image_paths)<4:
-                                        cols = st.columns(len(image_paths))
-                                    else:
-                                        cols = st.columns(4)
-                                    for i, image_path in enumerate(image_paths):
-                                        
-                                        with cols[i%4]:
-                                            st.image(image_path)
+                            container = st.empty()
+                            # Buffer to store the incoming chunks
+                            buffer = b""
+                            boundary = b"my-custom-boundary"
+                            image_paths = ''
+                            answer = ''
+                            # Get the streaming response from FastAPI
+                            async for chunk in get_streaming_response(st.session_state.car_model, user_input, st.session_state.session_id, st.session_state.llm_model):
+                                buffer += chunk.encode('utf-8')  # chunk를 바이트로 변환
+                                parts = buffer.split(boundary)
+                                
+                                for part in parts:
+                                    part_data = part.split(b"\r\n\r\n")
 
-                        self.messages.append({"role": "assistant", "content": assistant_response, "answer_type": answer_type})
-                    except TimeoutException:
-                        pass
+                                if len(part_data) >= 2:
+                                    header, data = part_data[0], part_data[1]
+
+                                    if b"Content-Type: text/event-stream" in header:
+                                        token = data.decode("utf-8")
+                                        answer += token
+                                        container.markdown(answer)
+                                    elif b"Content-Type: text/plain" in header:
+                                        image_paths = data.decode('utf-8')  # 이미지 경로를 문자열로 변환  
+                            
+                            try:
+                                image_paths = ast.literal_eval(image_paths)
+                                assistant_response = {"text": answer, "image": image_paths}
+                            except:
+                                assistant_response = {"text": answer, "image": []}
+                            
+                            with container.container():
+                                st.markdown(answer)
+                                if len(image_paths) != 0:
+                                    with st.expander("Click to view images"):
+                                        if len(image_paths)<4:
+                                            cols = st.columns(len(image_paths))
+                                        else:
+                                            cols = st.columns(4)
+                                        for i, image_path in enumerate(image_paths):
+                                            
+                                            with cols[i%4]:
+                                                st.image(image_path)
+
+                            self.messages.append({"role": "assistant", "content": assistant_response, "answer_type": answer_type})
+                        except TimeoutException:
+                            pass
 
 
     def side_bar(self):
