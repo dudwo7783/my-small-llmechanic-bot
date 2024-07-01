@@ -14,6 +14,9 @@ import redis
 
 # TODO: Put Redis Server
 REDIS_URL = "REDIS SERVER URL"
+SERVER_IP = 'SERVER_IP'
+SERVER_PORT = "SERVER_PORT"
+
 session_id = "999"
 
 async def get_streaming_response(namespace, query, session_id, llm_model):
@@ -31,6 +34,9 @@ class ChatBot():
         self.id=1
         self.answer = []
         self.set_num = -999
+        self.reset_num = 0
+        self.hist_but = 0
+
     def reset_chat(self, personal_id):
         st.session_state.chat_bot = ChatBot(personal_id)
         st.rerun()
@@ -78,11 +84,13 @@ class ChatBot():
         cursor.execute("SELECT * FROM button WHERE id=?", (self.id,))
         result = cursor.fetchone()
         response = json.loads(result[2])
-        
         if result[4] == 0:
             with st.chat_message("assistant"):
                 for index, res in enumerate(response):
-                    ind = str(self.id) + '_' + str(index)
+                    if self.reset_num <1:
+                        ind = str(self.id) + '_' + str(index)
+                    else:
+                        ind = str(self.id) + '_' + str(index) + '_' + str(self.reset_num)
 
                     if st.button(res, key=f"question_{ind}", type="primary"):
                         st.session_state.clicked = True
@@ -136,9 +144,11 @@ class ChatBot():
                     else:
                         for index, res in enumerate(content['text'][0]):
                             if res != content['text'][1]:
-                                st.button(res)
+                                st.button(res, key=f'hist_{self.hist_but}')
+                                self.hist_but +=1
                             else:
-                                st.button(res, type="primary")
+                                st.button(res, key=f'hist_{self.hist_but}', type="primary")
+                                self.hist_but +=1
                 else:
                     st.markdown(content["text"])
                 
@@ -164,6 +174,7 @@ class ChatBot():
             if st.button('버튼 질문', key=f"reset_button", type="primary"):
                 answer_type = "button"
                 self.reset_button()
+                self.reset_num += 1
                 st.rerun()
 
         if user_input:
@@ -236,7 +247,7 @@ class ChatBot():
                 "Select Your Car :car:",
                 ["IONIQ5_2024", "SANTAFE_MX5_2023", "SONATA_DN8_2024"]
             )
-            r= redis.Redis(host='43.200.165.177', port=6379)
+            r= redis.Redis(host=SERVER_IP, port=SERVER_PORT)
             st.session_state.car_model = car_model
             key_list = r.keys(f'message_store:{st.session_state.personal_id}*')
             key_list = [key for key in key_list if b'image' not in key]
@@ -245,7 +256,7 @@ class ChatBot():
 
                     result = list(reversed(r.lrange(key, 0, -1)))
                     conv = result[-2]
-                    first_text = json.loads(conv.decode())['data']['content'][:16]
+                    first_text = json.loads(conv.decode())['data']['content'][:13] + "..."
                     if st.button(f'Chat_{index}: {first_text}', key=f"side_bar_{key}", type="secondary"):
                         # st.session_state.session_id = 
                         st.session_state.clicked = True
@@ -292,7 +303,7 @@ if "chat_bot" not in st.session_state:
     st.session_state.personal_id=999
     st.session_state.car_model = 'IONIQ5_2024'
 
-    r= redis.Redis(host='43.200.165.177', port=6379)
+    r= redis.Redis(host=SERVER_IP, port=SERVER_PORT)
     key_list = r.keys(f'message_store:{st.session_state.personal_id}*')
     st.session_state.key_list = key_list
     key_list = [key for key in key_list if b'image' not in key]
