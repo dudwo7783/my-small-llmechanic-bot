@@ -27,6 +27,14 @@ async def get_streaming_response(namespace, query, session_id, llm_model):
             async for chunk in response.aiter_text():
                 yield chunk
 
+js = '''
+    <script>
+        var body = window.parent.document.querySelector(".main");
+        console.log(body);
+        body.scrollTop = body.scrollHeight;
+    </script>
+'''
+
 class ChatBot():
     def __init__(self, personal_id=999):
         self.messages = []
@@ -37,32 +45,38 @@ class ChatBot():
         self.reset_num = 0
         self.hist_but = 0
 
+    # 새로운 채팅 시작 시 채팅 리셋
     def reset_chat(self, personal_id):
         st.session_state.chat_bot = ChatBot(personal_id)
         st.rerun()
 
+    # 새롭게 버튼 질문 시작 시 버튼 리셋
     def reset_button(self):
         self.type = 0
         self.set_num=-999
         self.id = 1
         self.answer = []
 
+    # 새로운 대화 이력 조회 시 메시지 리셋하고 로드
     def reset_messages(self, r, redis_messages):
         self.messages=[]
-        key = [key for key in st.session_state.key_list if b'image' in key and st.session_state.key in key]
+
+        key = [key for key in st.session_state.key_list if b'image' in key and st.session_state.session_id.encode('utf-8') in key]
         val = []
         if len(key)==1:
+            # redis 메시지 불러오기
             result = list(reversed(r.lrange(key[0], 0, -1)))
             result = [json.loads(item.decode('utf-8')) for item in result]
-
             for res in result:
                 image = ast.literal_eval(res['data']['content'])
                 val.append(image)
-
-        else:
+        elif len(key)>1:
             # key는 하나여야만 함
             print('FAIL: Too Many Keys')
+        else:
+            print('FAIL: No Key')
 
+        # chat history에 이미지 붙이기
         for ind, mes in enumerate(redis_messages):
             content = {}
             content['text']=mes
@@ -79,6 +93,7 @@ class ChatBot():
     
     # Button 클릭 시 작동
     def display_question_buttons(self, answer_type):
+        # 미리 작성한 문답 내용 불러오기
         conn = sqlite3.connect('button.db')
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM button WHERE id=?", (self.id,))
@@ -108,10 +123,13 @@ class ChatBot():
                             user_res = {"text": res, 'image': []}
                             self.messages.append({"role": "user", "content": user_res})
                 else:
+                    # 답변에 해당하는 질문 불러오기 위해
                     if self.answer:
                         self.set_num = self.answer[0]
+            # db 서칭하는 key 바꿔주기
             if self.set_num != -999:
                 self.id = self.set_num
+            # 클릭 시 
             if st.session_state.clicked:
                 st.session_state.clicked = False
                 st.rerun()
@@ -151,6 +169,8 @@ class ChatBot():
                                 self.hist_but +=1
                 else:
                     st.markdown(content["text"])
+                    # 이미지가 없을 경우 이전 내용이 print되는 현상 방지 코드
+                    st.markdown('')
                 
                 if message["role"]=='assistant' and content["image"] != None and message["answer_type"] == "image":
                     image_paths = content["image"]
@@ -163,6 +183,9 @@ class ChatBot():
                             for i, image_path in enumerate(image_paths):
                                 with cols[i%4]:
                                     st.image(image_path)
+                    else:
+                        # 이미지가 없을 경우 이전 내용이 print되는 현상 방지 코드
+                        st.markdown('')
 
     async def handle_user_input(self, answer_type):
         container_base = st.empty()
@@ -247,13 +270,14 @@ class ChatBot():
                 "Select Your Car :car:",
                 ["IONIQ5_2024", "SANTAFE_MX5_2023", "SONATA_DN8_2024"]
             )
-            r= redis.Redis(host=SERVER_IP, port=SERVER_PORT)
+            r= redis.Redis(host='43.200.165.177', port=6379)
             st.session_state.car_model = car_model
             key_list = r.keys(f'message_store:{st.session_state.personal_id}*')
+            key_list.sort()
+            st.session_state.key_list = key_list
             key_list = [key for key in key_list if b'image' not in key]
             if len(key_list)>0:
                 for index, key in enumerate(key_list, start=1):
-
                     result = list(reversed(r.lrange(key, 0, -1)))
                     conv = result[-2]
                     first_text = json.loads(conv.decode())['data']['content'][:13] + "..."
@@ -269,7 +293,6 @@ class ChatBot():
             st.session_state.max_session = index
             if st.session_state.clicked:
                 st.session_state.clicked = False
-                # self.type = 1
                 st.rerun()
             if st.button("New Chat", key="new_chat", type="primary"):
                 new_session = st.session_state.max_session + 1
@@ -296,6 +319,8 @@ class ChatBot():
             else:
                 answer_type="image"
                 asyncio.run(self.handle_user_input(answer_type))
+
+        st.components.v1.html(js)
         print("END")
 
 if "chat_bot" not in st.session_state:
@@ -303,7 +328,7 @@ if "chat_bot" not in st.session_state:
     st.session_state.personal_id=999
     st.session_state.car_model = 'IONIQ5_2024'
 
-    r= redis.Redis(host=SERVER_IP, port=SERVER_PORT)
+    r= redis.Redis(host='43.200.165.177', port=6379)
     key_list = r.keys(f'message_store:{st.session_state.personal_id}*')
     st.session_state.key_list = key_list
     key_list = [key for key in key_list if b'image' not in key]
